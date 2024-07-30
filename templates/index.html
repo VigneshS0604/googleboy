@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thikse School Bot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #chat-container {
+            width: 400px;
+            height: 500px;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        #messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+        }
+        .user-message {
+            background: #d4edda;
+            align-self: flex-end;
+        }
+        .bot-message {
+            background: #f8d7da;
+            align-self: flex-start;
+        }
+        .emoji {
+            font-size: 1.5em;
+            margin-left: 5px;
+        }
+        @keyframes fly-up {
+            0% {
+                transform: translateY(100%) translateX(0);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100%) translateX(calc(50px * var(--direction)));
+                opacity: 0;
+            }
+        }
+        .flying-emoji {
+            position: absolute;
+            bottom: 0;
+            font-size: 2em;
+            animation: fly-up 2s ease-in-out;
+        }
+        #chat-form {
+            display: flex;
+        }
+        #chat-form input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px 0 0 5px;
+            outline: none;
+        }
+        #chat-form button {
+            padding: 10px;
+            border: none;
+            background: #007bff;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 0 5px 5px 0;
+            outline: none;
+        }
+        #chat-form button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <div id="messages"></div>
+        <form id="chat-form">
+            <input type="text" id="question" placeholder="Ask a question..." autocomplete="off" required>
+            <button type="submit">Send</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('chat-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const questionInput = document.getElementById('question');
+            const question = questionInput.value;
+            questionInput.value = '';
+            
+            // Display the user's message
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.textContent = question;
+            userMessageDiv.classList.add('message', 'user-message');
+            document.getElementById('messages').appendChild(userMessageDiv);
+
+            // Send the question to the server
+            const response = await fetch('/ask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'question': question
+                })
+            });
+            const data = await response.json();
+            
+            // Display the bot's response
+            const botMessageDiv = document.createElement('div');
+            botMessageDiv.textContent = data.response;
+            botMessageDiv.classList.add('message', 'bot-message');
+            document.getElementById('messages').appendChild(botMessageDiv);
+
+            // Display the emoji if provided
+            if (data.emoji) {
+                // Create and animate multiple flying emojis inside chat box
+                const emojiCount = Math.floor(Math.random() * 11) + 20; // Random count between 20 and 30
+                for (let i = 0; i < emojiCount; i++) {
+                    const flyingEmoji = document.createElement('div');
+                    flyingEmoji.textContent = data.emoji;
+                    flyingEmoji.classList.add('flying-emoji');
+                    flyingEmoji.style.left = `${Math.random() * 100}%`; // Random horizontal position
+                    flyingEmoji.style.bottom = `${Math.random() * 50}%`; // Random vertical starting position
+                    flyingEmoji.style.setProperty('--direction', Math.random() > 0.5 ? 1 : -1); // Random horizontal direction
+                    flyingEmoji.style.animationDelay = `${Math.random() * 0.5}s`; // Random delay up to 0.5s
+                    document.getElementById('chat-container').appendChild(flyingEmoji);
+
+                    // Remove the flying emoji after animation completes
+                    flyingEmoji.addEventListener('animationend', () => {
+                        flyingEmoji.remove();
+                    });
+                }
+            }
+
+            // Scroll to the bottom of the chat
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+    </script>
+</body>
+</html>
